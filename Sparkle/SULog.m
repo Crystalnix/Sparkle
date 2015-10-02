@@ -18,8 +18,28 @@
 //	Constants:
 // -----------------------------------------------------------------------------
 
-static NSString *const SULogFilePath = @"~/Library/Logs/SparkleUpdateLog.log";
+static NSString *const SULogFilePathTemplate = @"~/Library/Logs/SparkleUpdateLog-%@.log";
 
+// -----------------------------------------------------------------------------
+//	Private prototypes:
+// -----------------------------------------------------------------------------
+
+NSString *SULogFilePath(void);
+
+// -----------------------------------------------------------------------------
+//	SUGetFilePath:
+//		Returns a path, unique for the application, in the user's logs dir
+// -----------------------------------------------------------------------------
+
+NSString *SULogFilePath(void)
+{
+    static NSString *filePath = nil;
+    if (filePath == nil) {
+        filePath = [NSString stringWithFormat:SULogFilePathTemplate,
+                    [[NSFileManager defaultManager] displayNameAtPath:[[NSBundle mainBundle] bundlePath]]];
+    }
+    return filePath;
+}
 
 // -----------------------------------------------------------------------------
 //	SUClearLog:
@@ -34,7 +54,7 @@ static NSString *const SULogFilePath = @"~/Library/Logs/SparkleUpdateLog.log";
 
 void SUClearLog(void)
 {
-    FILE *logfile = fopen([[SULogFilePath stringByExpandingTildeInPath] fileSystemRepresentation], "w");
+    FILE *logfile = fopen([[SULogFilePath() stringByExpandingTildeInPath] fileSystemRepresentation], "w");
     if (logfile) {
         fclose(logfile);
         SULog(@"===== %@ =====", [[NSFileManager defaultManager] displayNameAtPath:[[NSBundle mainBundle] bundlePath]]);
@@ -65,7 +85,7 @@ void SULog(NSString *format, ...)
     NSString *theStr = [[NSString alloc] initWithFormat:format arguments:ap];
     NSLog(@"Sparkle: %@", theStr);
 
-    FILE *logfile = fopen([[SULogFilePath stringByExpandingTildeInPath] fileSystemRepresentation], "a");
+    FILE *logfile = fopen([[SULogFilePath() stringByExpandingTildeInPath] fileSystemRepresentation], "a");
     if (logfile) {
         theStr = [NSString stringWithFormat:@"%@: %@\n", [NSDate date], theStr];
         NSData *theData = [theStr dataUsingEncoding:NSUTF8StringEncoding];
