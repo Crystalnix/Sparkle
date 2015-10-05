@@ -183,6 +183,9 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
     if (!hasLaunchedBefore) {
         [self.host setBool:YES forUserDefaultsKey:SUHasLaunchedBeforeKey];
     }
+    
+    // Keep log file size in bounds
+    SUMaybeTrimLogFile();
 
     if (shouldPrompt) {
         NSArray *profileInfo = [self.host systemProfile];

@@ -20,6 +20,9 @@
 
 static NSString *const SULogFilePathTemplate = @"~/Library/Logs/SparkleUpdateLog-%@.log";
 
+static const unsigned long long MaxLogFileSize = 1 * 1024 * 1024;
+static const float ContentTrimmingKoefficient = 0.75;
+
 // -----------------------------------------------------------------------------
 //	Private prototypes:
 // -----------------------------------------------------------------------------
@@ -89,4 +92,58 @@ void SULog(NSString *format, ...)
     va_end(ap);
 }
 
+// -----------------------------------------------------------------------------
+// SUMaybeTrimLogFile:
+//      Call this function to reduce log file size if it became bigger than
+//      defined MaxLogFileSize constant. Data is reduced up to DesiredLogFileSize
+//      and to the first character after its first new line character.
+// -----------------------------------------------------------------------------
+
+void SUMaybeTrimLogFile(void)
+{
+    NSString *logFilePath = [SULogFilePath() stringByExpandingTildeInPath];
+    NSError *error = nil;
+    unsigned long long logSize = [[[NSFileManager defaultManager] attributesOfItemAtPath:logFilePath
+                                                                                   error:&error] fileSize];
+    
+    if (error != nil) {
+        NSLog(@"%@", error);
+        return;
+    }
+    
+    if (logSize < MaxLogFileSize) {
+        return;
+    }
+    
+    // Read contents from the log file
+    NSString *contents = [NSString stringWithContentsOfFile:logFilePath encoding:NSUTF8StringEncoding error:&error];
+    if (error != nil) {
+        NSLog(@"%@", error);
+    }
+    if (contents.length == 0) {
+        return;
+    }
+    
+    NSUInteger cropLength = (NSUInteger)((MaxLogFileSize * ContentTrimmingKoefficient) * contents.length / logSize);
+    if (contents.length < cropLength) {
+        return;
+    }
+    
+    // Trim to desired size
+    NSString *newContents = [contents substringFromIndex:contents.length - cropLength];
+    if (newContents.length == 0) {
+        return;
+    }
+    // Trim to the first character after first new-line character, if possible
+    NSRange firstNewLineRange = [newContents rangeOfCharacterFromSet:[NSCharacterSet newlineCharacterSet]];
+    if (firstNewLineRange.location != NSNotFound && firstNewLineRange.location + 1 < newContents.length) {
+        newContents = [newContents substringFromIndex:firstNewLineRange.location + 1];
+    }
+    
+    // Save results to the file (overwrite)
+    [newContents writeToFile:logFilePath atomically:YES encoding:NSUTF8StringEncoding error:&error];
+    if (error != nil) {
+        NSLog(@"%@", error);
+    }
+}
 
