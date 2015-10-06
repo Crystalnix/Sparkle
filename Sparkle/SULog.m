@@ -103,6 +103,11 @@ void SUMaybeTrimLogFile(void)
 {
     NSString *logFilePath = [SULogFilePath() stringByExpandingTildeInPath];
     NSError *error = nil;
+    
+    if (![[NSFileManager defaultManager] fileExistsAtPath:logFilePath]) {
+        return;
+    }
+    
     unsigned long long logSize = [[[NSFileManager defaultManager] attributesOfItemAtPath:logFilePath
                                                                                    error:&error] fileSize];
     
