@@ -41,6 +41,7 @@
     [self abortUpdate]; // Don't tell the user that no update was found; this was a scheduled update.
 }
 
+#if 0   // We need logs in any case
 - (void)abortUpdateWithError:(NSError *)error
 {
     if (self.showErrors) {
@@ -56,5 +57,6 @@
         [self abortUpdate];
     }
 }
+#endif
 
 @end

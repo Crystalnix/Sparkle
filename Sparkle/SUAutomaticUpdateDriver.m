@@ -188,6 +188,7 @@ static const NSTimeInterval SUAutomaticUpdatePromptImpatienceTimer = 60 * 60 * 2
     [self installWithToolAndRelaunch:NO];
 }
 
+#if 0   // We need to always have the log message
 - (void)abortUpdateWithError:(NSError *)error
 {
     if (self.showErrors) {
@@ -203,5 +204,6 @@ static const NSTimeInterval SUAutomaticUpdatePromptImpatienceTimer = 60 * 60 * 2
         [self abortUpdate];
     }
 }
+#endif
 
 @end
