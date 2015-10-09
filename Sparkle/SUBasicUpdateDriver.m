@@ -318,7 +318,7 @@
 {
     assert(self.updateItem);
 
-    SULog(@"Donwload completed, extracting...");
+    SULog(@"Download completed, extracting...");
     [self extractUpdate];
 }
 
