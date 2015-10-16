@@ -92,6 +92,16 @@ void SULog(NSString *format, ...)
     va_end(ap);
 }
 
+void SULogTrace(NSString *format, ...) {
+    va_list ap;
+    va_start(ap, format);
+    NSString *theStr = [[NSString alloc] initWithFormat:format arguments:ap];
+    
+    SULog(@"%@", theStr);
+    
+    va_end(ap);
+}
+
 // -----------------------------------------------------------------------------
 // SUMaybeTrimLogFile:
 //      Call this function to reduce log file size if it became bigger than

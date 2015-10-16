@@ -186,7 +186,7 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
     
     // Keep log file size in bounds
     SUMaybeTrimLogFile();
-    SULog(@"Sparkle module started. App version %@. Works with %@", [self.host version], [self feedURL]);
+    SULogTrace(@"Sparkle module started. App version %@. Works with %@", [self.host version], [self feedURL]);
 
     if (shouldPrompt) {
         NSArray *profileInfo = [self.host systemProfile];
@@ -339,7 +339,7 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
 
 - (void)checkForUpdatesWithDriver:(SUUpdateDriver *)d
 {
-    SULog(@"Requested for update via %@", NSStringFromClass([d class]));
+    SULogTrace(@"Requested for update via %@", NSStringFromClass([d class]));
     
 	if ([self updateInProgress]) {
         SULog(@"Update check rejected: in progress");
@@ -363,7 +363,7 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
     // If we're not given a driver at all, just schedule the next update check and bail.
     if (!self.driver)
     {
-        SULog(@"Update check rejected: no driver is set");
+        SULogTrace(@"Update check rejected: no driver is set");
         [self scheduleNextUpdateCheck];
         return;
     }
@@ -372,7 +372,7 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
     if (theFeedURL) { // Use a NIL URL to cancel quietly.
         [self.driver checkForUpdatesAtURL:theFeedURL host:self.host];
     } else {
-        SULog(@"Update check aborted: empty url");
+        SULogTrace(@"Update check aborted: empty url");
         [self.driver abortUpdate];
     }
 }

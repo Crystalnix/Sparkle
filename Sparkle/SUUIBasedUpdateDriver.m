@@ -99,7 +99,7 @@
     [self.host setObject:nil forUserDefaultsKey:SUSkippedVersionKey];
     switch (choice) {
         case SUInstallUpdateChoice:
-            SULog(@"User chose: update");
+            SULogTrace(@"User chose: update");
             self.statusController = [[SUStatusController alloc] initWithHost:self.host];
             [self.statusController beginActionWithTitle:SULocalizedString(@"Downloading update...", @"Take care not to overflow the status window.") maxProgressValue:0.0 statusText:nil];
             [self.statusController setButtonTitle:SULocalizedString(@"Cancel", nil) target:self action:@selector(cancelDownload:) isDefault:NO];
@@ -108,19 +108,19 @@
             break;
 
         case SUOpenInfoURLChoice:
-            SULog(@"User chose: see info");
+            SULogTrace(@"User chose: see info");
             [[NSWorkspace sharedWorkspace] openURL:[self.updateItem infoURL]];
             [self abortUpdate];
             break;
 
         case SUSkipThisVersionChoice:
-            SULog(@"User chose: skip this version");
+            SULogTrace(@"User chose: skip this version");
             [self.host setObject:[self.updateItem versionString] forUserDefaultsKey:SUSkippedVersionKey];
             [self abortUpdate];
             break;
 
         case SURemindMeLaterChoice:
-            SULog(@"User chose: remind later");
+            SULogTrace(@"User chose: remind later");
             [self abortUpdate];
             break;
     }

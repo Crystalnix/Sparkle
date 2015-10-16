@@ -49,9 +49,9 @@
 	{
         [self abortUpdateWithError:[NSError errorWithDomain:SUSparkleErrorDomain code:SURunningFromDiskImageError userInfo:@{ NSLocalizedDescriptionKey: [NSString stringWithFormat:SULocalizedString(@"%1$@ can't be updated when it's running from a read-only volume like a disk image or an optical drive. Move %1$@ to your Applications folder, relaunch it from there, and try again.", nil), [aHost name]] }]];
         return;
-    } else {
-        SULog(@"Requesting appcast...");
     }
+    
+    SULogTrace(@"Requesting appcast...");
 
     SUAppcast *appcast = [[SUAppcast alloc] init];
 
@@ -86,7 +86,7 @@
 - (BOOL)isItemNewer:(SUAppcastItem *)ui
 {
     BOOL result = [[self versionComparator] compareVersion:[self.host version] toVersion:[ui versionString]] == NSOrderedAscending;
-    SULog(@"Comparing versions: %@ vs %@ = %@",
+    SULogTrace(@"Comparing versions: %@ vs %@ = %@",
           self.host.version, ui.versionString, result ? @"newer" : @"older or the same");
     return result;
 }
@@ -102,11 +102,11 @@
     // Check minimum and maximum System Version
     if ([ui minimumSystemVersion] != nil && ![[ui minimumSystemVersion] isEqualToString:@""]) {
         minimumVersionOK = [[SUStandardVersionComparator defaultComparator] compareVersion:[ui minimumSystemVersion] toVersion:[SUHost systemVersionString]] != NSOrderedDescending;
-        SULog(@"Comparing minimum version: %@ vs %@ = %@", ui.minimumSystemVersion, [SUHost systemVersionString], minimumVersionOK ? @"OK" : @"Failed");
+        SULogTrace(@"Comparing minimum version: %@ vs %@ = %@", ui.minimumSystemVersion, [SUHost systemVersionString], minimumVersionOK ? @"OK" : @"Failed");
     }
     if ([ui maximumSystemVersion] != nil && ![[ui maximumSystemVersion] isEqualToString:@""]) {
         maximumVersionOK = [[SUStandardVersionComparator defaultComparator] compareVersion:[ui maximumSystemVersion] toVersion:[SUHost systemVersionString]] != NSOrderedAscending;
-        SULog(@"Comparing maximum version: %@ vs %@ = %@", ui.maximumSystemVersion, [SUHost systemVersionString], maximumVersionOK ? @"OK" : @"Failed");
+        SULogTrace(@"Comparing maximum version: %@ vs %@ = %@", ui.maximumSystemVersion, [SUHost systemVersionString], maximumVersionOK ? @"OK" : @"Failed");
     }
 
     return minimumVersionOK && maximumVersionOK;
@@ -117,7 +117,7 @@
     NSString *skippedVersion = [self.host objectForUserDefaultsKey:SUSkippedVersionKey];
 	if (skippedVersion == nil) { return NO; }
     BOOL isSkipped = [[self versionComparator] compareVersion:[ui versionString] toVersion:skippedVersion] != NSOrderedDescending;
-    SULog(@"Comparing skipped version: %@ vs %@ = %@", ui.versionString, skippedVersion, isSkipped ? @"skipped" : @"not skipped");
+    SULogTrace(@"Comparing skipped version: %@ vs %@ = %@", ui.versionString, skippedVersion, isSkipped ? @"skipped" : @"not skipped");
     return isSkipped;
 }
 
@@ -128,7 +128,7 @@
 
 - (void)appcastDidFinishLoading:(SUAppcast *)ac
 {
-    SULog(@"Appcast loaded, checking...");
+    SULogTrace(@"Appcast loaded, checking...");
     
     if ([[self.updater delegate] respondsToSelector:@selector(updater:didFinishLoadingAppcast:)]) {
         [[self.updater delegate] updater:self.updater didFinishLoadingAppcast:ac];
@@ -209,7 +209,7 @@
                              withRequest:request];
     }
     self.download = [[NSURLDownload alloc] initWithRequest:request delegate:self];
-    SULog(@"Downloading an update started...");
+    SULogTrace(@"Downloading an update started...");
 }
 
 - (void)download:(NSURLDownload *)__unused d decideDestinationWithSuggestedFilename:(NSString *)name
@@ -318,7 +318,7 @@
 {
     assert(self.updateItem);
 
-    SULog(@"Download completed, extracting...");
+    SULogTrace(@"Download completed, extracting...");
     [self extractUpdate];
 }
 
@@ -374,7 +374,7 @@
 {
     assert(self.updateItem);
 
-    SULog(@"Unarchiving completed, relaunching...");
+    SULogTrace(@"Unarchiving completed, relaunching...");
     [self installWithToolAndRelaunch:YES];
 }
 
@@ -450,7 +450,7 @@
         [invocation setTarget:self];
         postponedOnce = YES;
         if ([updaterDelegate updater:self.updater shouldPostponeRelaunchForUpdate:self.updateItem untilInvoking:invocation]) {
-            SULog(@"Relaunch postponed");
+            SULogTrace(@"Relaunch postponed");
             return;
         }
     }
