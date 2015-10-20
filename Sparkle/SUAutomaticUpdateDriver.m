@@ -11,6 +11,7 @@
 #import "SUAutomaticUpdateAlert.h"
 #import "SUHost.h"
 #import "SUConstants.h"
+#import "SULog.h"
 
 // If the user hasn't quit in a week, ask them if they want to relaunch to get the latest bits. It doesn't matter that this measure of "one day" is imprecise.
 static const NSTimeInterval SUAutomaticUpdatePromptImpatienceTimer = 60 * 60 * 24 * 7;
@@ -188,7 +189,6 @@ static const NSTimeInterval SUAutomaticUpdatePromptImpatienceTimer = 60 * 60 * 2
     [self installWithToolAndRelaunch:NO];
 }
 
-#if 0   // We need to always have the log message
 - (void)abortUpdateWithError:(NSError *)error
 {
     if (self.showErrors) {
@@ -202,8 +202,14 @@ static const NSTimeInterval SUAutomaticUpdatePromptImpatienceTimer = 60 * 60 * 2
         }
 
         [self abortUpdate];
+        
+        if ([error code] != SUNoUpdateError) {
+            SULog(@"Error: %@ %@ (URL %@)",
+                  error.localizedDescription,
+                  error.localizedFailureReason,
+                  error.userInfo[NSURLErrorFailingURLErrorKey]);
+        }
     }
 }
-#endif
 
 @end

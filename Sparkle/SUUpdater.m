@@ -82,6 +82,8 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
 {
     self = [super init];
     if (bundle == nil) bundle = [NSBundle mainBundle];
+    
+    SULoadLogSettingsFromBundle(bundle);
 
     self.sparkleBundle = [NSBundle bundleForClass:[self class]];
     if (!self.sparkleBundle) {
@@ -342,7 +344,7 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
     SULogTrace(@"Requested for update via %@", NSStringFromClass([d class]));
     
 	if ([self updateInProgress]) {
-        SULog(@"Update check rejected: in progress");
+        SULogTrace(@"Update check rejected: in progress");
         return;
     }
 	if (self.checkTimer) { [self.checkTimer invalidate]; self.checkTimer = nil; }		// Timer is non-repeating, may have invalidated itself, so we had to retain it.
@@ -353,7 +355,7 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
 
     if( [self.delegate respondsToSelector: @selector(updaterMayCheckForUpdates:)] && ![self.delegate updaterMayCheckForUpdates: self] )
 	{
-        SULog(@"Update check rejected: not allowed by delegate");
+        SULogTrace(@"Update check rejected: not allowed by delegate");
         [self scheduleNextUpdateCheck];
         return;
     }

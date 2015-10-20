@@ -160,11 +160,11 @@
     }
 
     if ([self itemContainsValidUpdate:item]) {
-        SULog(@"There are updates, will try to apply...");
+        SULogTrace(@"There are updates, will try to apply...");
         self.updateItem = item;
         [self didFindValidUpdate];
     } else {
-        SULog(@"No updates found");
+        SULogTrace(@"No updates found");
         self.updateItem = nil;
         [self didNotFindUpdate];
     }
@@ -489,7 +489,7 @@
             }]];
         }
     }
-    SULog(@"Extracted. Relaunching...");
+    SULogTrace(@"Extracted. Relaunching...");
 
     [[NSNotificationCenter defaultCenter] postNotificationName:SUUpdaterWillRestartNotification object:self];
     if ([updaterDelegate respondsToSelector:@selector(updaterWillRelaunchApplication:)])
