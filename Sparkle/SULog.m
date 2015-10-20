@@ -18,23 +18,38 @@
 //	Constants:
 // -----------------------------------------------------------------------------
 
+static NSString *const SULogDefaultFilePath = @"~/Library/Logs/SparkleUpdateLog.log";
 static NSString *const SULogFilePathTemplate = @"~/Library/Logs/SparkleUpdateLog-%@.log";
 
-static const unsigned long long MaxLogFileSize = 1 * 1024 * 1024;
-static const float ContentTrimmingKoefficient = 0.75;
+static unsigned long long MaxLogFileSize = 1 * 1024 * 1024; // 1MB default
+static float LogFileContentTrimmingKoefficient = 0.75;
+static BOOL EnableTraceLogging = NO;
+static BOOL UseCustomFile = NO;
+static BOOL ClearAtStart = YES;
 
 // -----------------------------------------------------------------------------
 //	Private prototypes:
 // -----------------------------------------------------------------------------
 
 NSString *SULogFilePath(void);
+NSString *SUCustomLogFilePath(void);
 
 // -----------------------------------------------------------------------------
 //	SUGetFilePath:
-//		Returns a path, unique for the application, in the user's logs dir
+//		Returns the log file path
 // -----------------------------------------------------------------------------
 
 NSString *SULogFilePath(void)
+{
+    return UseCustomFile ? SUCustomLogFilePath() : SULogDefaultFilePath;
+}
+
+// -----------------------------------------------------------------------------
+//	SUCustomLogFilePath:
+//		Returns a path, unique for the application, in the user's logs dir
+// -----------------------------------------------------------------------------
+
+NSString *SUCustomLogFilePath(void)
 {
     static NSString *filePath = nil;
     if (filePath == nil) {
@@ -77,6 +92,14 @@ void SUClearLog(void)
 
 void SULog(NSString *format, ...)
 {
+    static BOOL loggedYet = NO;
+    if (!loggedYet) {
+        loggedYet = YES;
+        if (ClearAtStart) {
+            SUClearLog();
+        }
+    }
+
     va_list ap;
     va_start(ap, format);
     NSString *theStr = [[NSString alloc] initWithFormat:format arguments:ap];
@@ -92,7 +115,19 @@ void SULog(NSString *format, ...)
     va_end(ap);
 }
 
+// -----------------------------------------------------------------------------
+//	SULogTrace:
+//		Same like SULog, but logs only when tracing option is enabled
+//
+//	TAKES:
+//		format	-	NSLog/printf-style format string.
+//		...		-	More parameters depending on format string's contents.
+// -----------------------------------------------------------------------------
+
 void SULogTrace(NSString *format, ...) {
+    if (!EnableTraceLogging) {
+        return;
+    }
     va_list ap;
     va_start(ap, format);
     NSString *theStr = [[NSString alloc] initWithFormat:format arguments:ap];
@@ -139,7 +174,7 @@ void SUMaybeTrimLogFile(void)
         return;
     }
     
-    NSUInteger cropLength = (NSUInteger)((MaxLogFileSize * ContentTrimmingKoefficient) * contents.length / logSize);
+    NSUInteger cropLength = (NSUInteger)((MaxLogFileSize * LogFileContentTrimmingKoefficient) * contents.length / logSize);
     if (contents.length < cropLength) {
         return;
     }
@@ -162,3 +197,35 @@ void SUMaybeTrimLogFile(void)
     }
 }
 
+// -----------------------------------------------------------------------------
+// SULoadLogSettingsFromBundle:
+//      Loads logging settings from the given bundle
+// -----------------------------------------------------------------------------
+
+void SULoadLogSettingsFromBundle(NSBundle *bundle)
+{
+    NSString *traceLoggingValue = [bundle objectForInfoDictionaryKey:SULogTraceLoggingKey];
+    if (traceLoggingValue != nil) {
+        EnableTraceLogging = [traceLoggingValue boolValue];
+    }
+    
+    NSString *customFileValue = [bundle objectForInfoDictionaryKey:SULogPersonalLogFileKey];
+    if (customFileValue != nil) {
+        UseCustomFile = [customFileValue boolValue];
+    }
+    
+    NSString *shouldClearAtStart = [bundle objectForInfoDictionaryKey:SULogClearAtLaunchKey];
+    if (shouldClearAtStart != nil) {
+        ClearAtStart = [shouldClearAtStart boolValue];
+    }
+    
+    NSNumber *maxFileSizeValue = [bundle objectForInfoDictionaryKey:SULogMaxFileSizeKey];
+    if (maxFileSizeValue != nil) {
+        MaxLogFileSize = [maxFileSizeValue unsignedLongLongValue];
+    }
+    
+    NSNumber *trimCoefValue = [bundle objectForInfoDictionaryKey:SULogTrimMaxFileSizeCoefficientKey];
+    if (trimCoefValue != nil) {
+        LogFileContentTrimmingKoefficient = [trimCoefValue floatValue];
+    }
+}
