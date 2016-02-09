@@ -22,6 +22,7 @@
 #import "SULog.h"
 #import "SUCodeSigningVerifier.h"
 #import "SULocalizations.h"
+#import "SUDeviceUID.h"
 #include <SystemConfiguration/SystemConfiguration.h>
 #import "SUSystemProfiler.h"
 #import "SUSystemUpdateInfo.h"
@@ -36,6 +37,7 @@ NSString *const SUUpdaterAppcastNotificationKey = @"SUUpdaterAppCastNotification
 @interface SUUpdater () <SUUpdaterPrivate>
 @property (strong) NSTimer *checkTimer;
 @property (strong) NSBundle *sparkleBundle;
+@property (strong) NSString *deviceUIDString;
 
 - (instancetype)initForBundle:(NSBundle *)bundle;
 - (void)startUpdateCycle;
@@ -61,6 +63,7 @@ NSString *const SUUpdaterAppcastNotificationKey = @"SUUpdaterAppCastNotification
 @synthesize host;
 @synthesize sparkleBundle;
 @synthesize decryptionPassword;
+@synthesize deviceUIDString;
 
 static NSMutableDictionary *sharedUpdaters = nil;
 static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaultsObservationContext";
@@ -95,6 +98,8 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
 {
     self = [super init];
     if (bundle == nil) bundle = [NSBundle mainBundle];
+
+    self.deviceUIDString = [SUDeviceUID uniqueIdentifierString];
 
     // Use explicit class to use the correct bundle even when subclassed
     self.sparkleBundle = [NSBundle bundleForClass:[SUUpdater class]];
@@ -515,6 +520,10 @@ static NSString *escapeURLComponent(NSString *str) {
 
     // Determine all the parameters we're attaching to the base feed URL.
     BOOL sendingSystemProfile = [self sendsSystemProfile];
+    
+    // ViaSat requires app version and device uid to be sent every time, depending only on the
+    // option from the defaults
+    BOOL sendingDeviceUID = sendingSystemProfile;
 
     // Let's only send the system profiling information once per week at most, so we normalize daily-checkers vs. biweekly-checkers and the such.
     NSDate *lastSubmitDate = [self.host objectForUserDefaultsKey:SULastProfileSubmitDateKey];
@@ -532,6 +541,23 @@ static NSString *escapeURLComponent(NSString *str) {
 	{
         parameters = [parameters arrayByAddingObjectsFromArray:[SUSystemProfiler systemProfileArrayForHost:self.host]];
         [self.host setObject:[NSDate date] forUserDefaultsKey:SULastProfileSubmitDateKey];
+    }
+    if (sendingDeviceUID) {
+        NSMutableArray *deviceItems = [NSMutableArray new];
+        
+        if (!sendingSystemProfile && [self.host version].length > 0) {
+            NSMutableDictionary *item = [NSMutableDictionary new];
+            item[@"key"] = @"appVersion"; // same as SUSystemProfilerApplicationVersionKey for profile
+            item[@"value"] = [self.host version];
+            [deviceItems addObject:item];
+        }
+        if (self.deviceUIDString.length > 0) {
+            NSMutableDictionary *item = [NSMutableDictionary new];
+            item[@"key"] = @"deviceID";
+            item[@"value"] = self.deviceUIDString;
+            [deviceItems addObject:item];
+        }
+        parameters = [parameters arrayByAddingObjectsFromArray:deviceItems];
     }
 	if ([parameters count] == 0) { return baseFeedURL; }
 
