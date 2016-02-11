@@ -514,16 +514,31 @@ static NSString *escapeURLComponent(NSString *str) {
              stringByReplacingOccurrencesOfString:@"+" withString:@"%2b"];
 }
 
+- (NSArray *)viasatRelatedParameters
+{
+    NSMutableArray *parameters = [NSMutableArray new];
+    
+    if ([self.host displayVersion].length > 0) {
+        NSMutableDictionary *item = [NSMutableDictionary new];
+        item[@"key"] = @"appVersionShort";
+        item[@"value"] = [self.host displayVersion];
+        [parameters addObject:item];
+    }
+    if (self.deviceUIDString.length > 0) {
+        NSMutableDictionary *item = [NSMutableDictionary new];
+        item[@"key"] = @"deviceID";
+        item[@"value"] = self.deviceUIDString;
+        [parameters addObject:item];
+    }
+    return parameters;
+}
+
 - (NSURL *)parameterizedFeedURL
 {
     NSURL *baseFeedURL = [self feedURL];
 
     // Determine all the parameters we're attaching to the base feed URL.
     BOOL sendingSystemProfile = [self sendsSystemProfile];
-    
-    // ViaSat requires app version and device uid to be sent every time, depending only on the
-    // option from the defaults
-    BOOL sendingDeviceUID = sendingSystemProfile;
 
     // Let's only send the system profiling information once per week at most, so we normalize daily-checkers vs. biweekly-checkers and the such.
     NSDate *lastSubmitDate = [self.host objectForUserDefaultsKey:SULastProfileSubmitDateKey];
@@ -542,23 +557,10 @@ static NSString *escapeURLComponent(NSString *str) {
         parameters = [parameters arrayByAddingObjectsFromArray:[SUSystemProfiler systemProfileArrayForHost:self.host]];
         [self.host setObject:[NSDate date] forUserDefaultsKey:SULastProfileSubmitDateKey];
     }
-    if (sendingDeviceUID) {
-        NSMutableArray *deviceItems = [NSMutableArray new];
-        
-        if (!sendingSystemProfile && [self.host version].length > 0) {
-            NSMutableDictionary *item = [NSMutableDictionary new];
-            item[@"key"] = @"appVersion"; // same as SUSystemProfilerApplicationVersionKey for profile
-            item[@"value"] = [self.host version];
-            [deviceItems addObject:item];
-        }
-        if (self.deviceUIDString.length > 0) {
-            NSMutableDictionary *item = [NSMutableDictionary new];
-            item[@"key"] = @"deviceID";
-            item[@"value"] = self.deviceUIDString;
-            [deviceItems addObject:item];
-        }
-        parameters = [parameters arrayByAddingObjectsFromArray:deviceItems];
-    }
+    
+    // ViaSat requires app version and device uid to be sent every time.
+    parameters = [parameters arrayByAddingObjectsFromArray:[self viasatRelatedParameters]];
+
 	if ([parameters count] == 0) { return baseFeedURL; }
 
     // Build up the parameterized URL.
