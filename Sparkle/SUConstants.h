@@ -46,6 +46,7 @@ extern NSString *const SUPublicDSAKeyFileKey;
 extern NSString *const SUAutomaticallyUpdateKey;
 extern NSString *const SUAllowsAutomaticUpdatesKey;
 extern NSString *const SUEnableAutomaticChecksKey;
+extern NSString *const SUAutomaticallyUpdatesWithoutUIKey;
 extern NSString *const SUEnableSystemProfilingKey;
 extern NSString *const SUSendProfileInfoKey;
 extern NSString *const SULastProfileSubmitDateKey;

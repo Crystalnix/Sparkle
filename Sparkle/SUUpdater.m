@@ -15,6 +15,7 @@
 #import "SUUpdatePermissionPrompt.h"
 
 #import "SUAutomaticUpdateDriver.h"
+#import "SUAutomaticUIlessUpdateDriver.h"
 #import "SUProbingUpdateDriver.h"
 #import "SUUserInitiatedUpdateDriver.h"
 #import "SUScheduledUpdateDriver.h"
@@ -31,6 +32,7 @@ NSString *const SUUpdaterDidFinishLoadingAppCastNotification = @"SUUpdaterDidFin
 NSString *const SUUpdaterDidFindValidUpdateNotification = @"SUUpdaterDidFindValidUpdateNotification";
 NSString *const SUUpdaterDidNotFindUpdateNotification = @"SUUpdaterDidNotFindUpdateNotification";
 NSString *const SUUpdaterWillRestartNotification = @"SUUpdaterWillRestartNotificationName";
+NSString *const SUUpdaterDidReachNearlyUpdatedStateNotification = @"SUUpdaterDidReachNearlyUpdatedStateNotification";
 NSString *const SUUpdaterAppcastItemNotificationKey = @"SUUpdaterAppcastItemNotificationKey";
 NSString *const SUUpdaterAppcastNotificationKey = @"SUUpdaterAppCastNotificationKey";
 
@@ -300,7 +302,8 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
 - (void)checkForUpdatesInBackground
 {
     // Do not use reachability for a preflight check. This can be deceptive and a bad idea. Apple does not recommend doing it.
-    SUUpdateDriver *theUpdateDriver = [[([self automaticallyDownloadsUpdates] ? [SUAutomaticUpdateDriver class] : [SUScheduledUpdateDriver class])alloc] initWithUpdater:self];
+    Class class = [self automaticallyDownloadsUpdates] ? ([self automaticallyUpdatesWithoutUI] ? [SUAutomaticUIlessUpdateDriver class] : [SUAutomaticUpdateDriver class]) : [SUScheduledUpdateDriver class];
+    SUUpdateDriver *theUpdateDriver = [[class alloc] initWithUpdater:self];
     
     [self checkForUpdatesWithDriver:theUpdateDriver];
 }
@@ -454,6 +457,16 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
 
     // Otherwise, automatically downloading updates is allowed. Does the user want it?
     return [self.host boolForUserDefaultsKey:SUAutomaticallyUpdateKey];
+}
+
+- (void)setAutomaticallyUpdatesWithoutUI:(BOOL)automaticallyUpdatesWithoutUI
+{
+    [self.host setBool:automaticallyUpdatesWithoutUI forUserDefaultsKey:SUAutomaticallyUpdatesWithoutUIKey];
+}
+
+- (BOOL)automaticallyUpdatesWithoutUI
+{
+    return [self.host boolForUserDefaultsKey:SUAutomaticallyUpdatesWithoutUIKey];
 }
 
 - (void)setFeedURL:(NSURL *)feedURL

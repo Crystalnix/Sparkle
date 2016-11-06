@@ -30,6 +30,8 @@
 		03BCA9591C6A3FD100004122 /* SUDeviceUID.h in Headers */ = {isa = PBXBuildFile; fileRef = 03BCA9571C6A3FD100004122 /* SUDeviceUID.h */; };
 		03BCA95A1C6A3FD100004122 /* SUDeviceUID.m in Sources */ = {isa = PBXBuildFile; fileRef = 03BCA9581C6A3FD100004122 /* SUDeviceUID.m */; };
 		03BCA95B1C6A3FD100004122 /* SUDeviceUID.m in Sources */ = {isa = PBXBuildFile; fileRef = 03BCA9581C6A3FD100004122 /* SUDeviceUID.m */; };
+		03D2DD901DCF4F04009FF68F /* SUAutomaticUIlessUpdateDriver.h in Headers */ = {isa = PBXBuildFile; fileRef = 03D2DD8E1DCF4F04009FF68F /* SUAutomaticUIlessUpdateDriver.h */; };
+		03D2DD911DCF4F04009FF68F /* SUAutomaticUIlessUpdateDriver.m in Sources */ = {isa = PBXBuildFile; fileRef = 03D2DD8F1DCF4F04009FF68F /* SUAutomaticUIlessUpdateDriver.m */; };
 		1420DF50196247F900203BB0 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1420DF4F196247F900203BB0 /* Images.xcassets */; };
 		142E0E0019A6954400E4312B /* Sparkle.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = 8DC2EF5B0486A6940098B216 /* Sparkle.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		142E0E0219A6A14700E4312B /* Sparkle.framework in Copy Files */ = {isa = PBXBuildFile; fileRef = 8DC2EF5B0486A6940098B216 /* Sparkle.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -465,6 +467,8 @@
 		03BCA9501C69EDAA00004122 /* SUDeviceUIDTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SUDeviceUIDTest.m; sourceTree = "<group>"; };
 		03BCA9571C6A3FD100004122 /* SUDeviceUID.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SUDeviceUID.h; sourceTree = "<group>"; };
 		03BCA9581C6A3FD100004122 /* SUDeviceUID.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SUDeviceUID.m; sourceTree = "<group>"; };
+		03D2DD8E1DCF4F04009FF68F /* SUAutomaticUIlessUpdateDriver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SUAutomaticUIlessUpdateDriver.h; sourceTree = "<group>"; };
+		03D2DD8F1DCF4F04009FF68F /* SUAutomaticUIlessUpdateDriver.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SUAutomaticUIlessUpdateDriver.m; sourceTree = "<group>"; };
 		0867D69BFE84028FC02AAC07 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		0867D6A5FE840307C02AAC07 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		1420DF4D196247B500203BB0 /* build-docs.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = "build-docs.sh"; sourceTree = "<group>"; };
@@ -1290,6 +1294,8 @@
 			children = (
 				61B93B250DD0FDD300DCD2F8 /* SUAutomaticUpdateDriver.h */,
 				61B93B260DD0FDD300DCD2F8 /* SUAutomaticUpdateDriver.m */,
+				03D2DD8E1DCF4F04009FF68F /* SUAutomaticUIlessUpdateDriver.h */,
+				03D2DD8F1DCF4F04009FF68F /* SUAutomaticUIlessUpdateDriver.m */,
 				61F83F6F0DBFE137006FDD30 /* SUBasicUpdateDriver.h */,
 				61F83F700DBFE137006FDD30 /* SUBasicUpdateDriver.m */,
 				610134790DD2541A0049ACDF /* SUProbingUpdateDriver.h */,
@@ -1416,6 +1422,7 @@
 				726F2CE51BC9C33D001971A4 /* SUOperatingSystem.h in Headers */,
 				618FA5220DAE8E8A0026945C /* SUPackageInstaller.h in Headers */,
 				6102FE460E077FCE00F85D09 /* SUPipedUnarchiver.h in Headers */,
+				03D2DD901DCF4F04009FF68F /* SUAutomaticUIlessUpdateDriver.h in Headers */,
 				618FA5050DAE8AB80026945C /* SUPlainInstaller.h in Headers */,
 				6101347B0DD2541A0049ACDF /* SUProbingUpdateDriver.h in Headers */,
 				61B93C090DD112FF00DCD2F8 /* SUScheduledUpdateDriver.h in Headers */,
@@ -2015,6 +2022,7 @@
 				61B5FC6F09C51F4900B25A18 /* SUAppcastItem.m in Sources */,
 				72316BDF1E0E17910039EFD9 /* SUApplicationInfo.m in Sources */,
 				6120721309CC5C4B007FE0F6 /* SUAutomaticUpdateAlert.m in Sources */,
+				03D2DD911DCF4F04009FF68F /* SUAutomaticUIlessUpdateDriver.m in Sources */,
 				61B93B280DD0FDD300DCD2F8 /* SUAutomaticUpdateDriver.m in Sources */,
 				61F83F720DBFE140006FDD30 /* SUBasicUpdateDriver.m in Sources */,
 				5D06E8EC0FD68CE4005AE3F6 /* SUBinaryDeltaApply.m in Sources */,

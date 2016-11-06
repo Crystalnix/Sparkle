@@ -106,6 +106,17 @@ SU_EXPORT @interface SUUpdater : NSObject
 @property BOOL automaticallyDownloadsUpdates;
 
 /*!
+ A property indicating whether or not display UIWindows and UIAlerts when updates.
+ 
+ Setting this property will persist in the host bundle's user defaults.
+ This option works for backgroud automatic updates when updater will only inform
+ delegate and obsrevers about checking and updating processes.
+ Note, that this option works only when both automaticallyChecksForUpdates and 
+ automaticallyDownloadsUpdates are enabled and -checkForUpdatesInBackground is called.
+ */
+@property BOOL automaticallyUpdatesWithoutUI;
+
+/*!
  A property indicating the current automatic update check interval.
 
  Setting this property will persist in the host bundle's user defaults.
