@@ -69,4 +69,9 @@ NSString *const SUUpdateDriverFinishedNotification = @"SUUpdateDriverFinished";
     SULog(SULogLevelDefault, @"ALERT: %@\n%@", alert.messageText, alert.informativeText);
 }
 
+- (void)installWithToolAndRelaunch:(BOOL)relaunch displayingUserInterface:(BOOL)showUI {
+    (void)showUI;
+    (void)relaunch;
+}
+
 @end

@@ -241,6 +241,11 @@ SU_EXPORT @interface SUUpdater : NSObject
  */
 @property (readonly) BOOL updateInProgress;
 
+/*!
+ Calls -installWithToolAndRelaunch: displayingUserInterface: on currently active driver. Returns NO when there is no driver and app can't be relauned in this way.
+ */
+- (BOOL)forceInstallAndRelaunch;
+
 @end
 
 #endif

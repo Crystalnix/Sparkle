@@ -36,6 +36,8 @@ extern NSString *const SUUpdateDriverFinishedNotification;
 @property (readonly) BOOL downloadsUpdatesInBackground;
 @property BOOL automaticallyInstallUpdates;
 
+- (void)installWithToolAndRelaunch:(BOOL)relaunch displayingUserInterface:(BOOL)showUI;
+
 @end
 
 #endif

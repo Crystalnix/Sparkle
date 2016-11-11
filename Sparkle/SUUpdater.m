@@ -421,6 +421,15 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
     [self scheduleNextUpdateCheck];
 }
 
+- (BOOL)forceInstallAndRelaunch
+{
+    if (self.driver) {
+        [self.driver installWithToolAndRelaunch:YES displayingUserInterface:!self.automaticallyUpdatesWithoutUI];
+        return YES;
+    }
+    return NO;
+}
+
 - (void)setAutomaticallyChecksForUpdates:(BOOL)automaticallyCheckForUpdates
 {
     [self.host setBool:automaticallyCheckForUpdates forUserDefaultsKey:SUEnableAutomaticChecksKey];
