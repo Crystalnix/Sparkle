@@ -246,6 +246,17 @@ SU_EXPORT @interface SUUpdater : NSObject
  */
 - (BOOL)forceInstallAndRelaunch;
 
+/*!
+ A property indicating whether or not an update was downloaded and extracted and application may be relaunched to apply update.
+ True when uiless driver sent nearly updated notification.
+ */
+@property (readonly) BOOL isNearlyUpdated;
+
+/*!
+ A property holding a version string of a downloaded update. Not empty only when isNearlyUpdated = YES.
+ */
+@property (strong, readonly) NSString *nearlyUpdatedVersionString;
+
 @end
 
 #endif

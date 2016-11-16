@@ -28,6 +28,8 @@
 #import "SUSystemProfiler.h"
 #import "SUSystemUpdateInfo.h"
 
+#import "SUAppcastItem.h"
+
 NSString *const SUUpdaterDidFinishLoadingAppCastNotification = @"SUUpdaterDidFinishLoadingAppCastNotification";
 NSString *const SUUpdaterDidFindValidUpdateNotification = @"SUUpdaterDidFindValidUpdateNotification";
 NSString *const SUUpdaterDidNotFindUpdateNotification = @"SUUpdaterDidNotFindUpdateNotification";
@@ -53,6 +55,9 @@ NSString *const SUUpdaterAppcastNotificationKey = @"SUUpdaterAppCastNotification
 @property (strong) SUUpdateDriver *driver;
 @property (strong) SUHost *host;
 
+@property BOOL isNearlyUpdated;
+@property (strong) NSString *nearlyUpdatedVersionString;
+
 @end
 
 @implementation SUUpdater
@@ -66,6 +71,8 @@ NSString *const SUUpdaterAppcastNotificationKey = @"SUUpdaterAppCastNotification
 @synthesize sparkleBundle;
 @synthesize decryptionPassword;
 @synthesize deviceUIDString;
+@synthesize isNearlyUpdated;
+@synthesize nearlyUpdatedVersionString;
 
 static NSMutableDictionary *sharedUpdaters = nil;
 static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaultsObservationContext";
@@ -113,6 +120,7 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
     // Register as observer straight away to avoid exceptions on -dealloc when -unregisterAsObserver is called:
     if (self) {
         [self registerAsObserver];
+        [self registerAsDriverObserver];
     }
 
     id updater = [sharedUpdaters objectForKey:[NSValue valueWithNonretainedObject:bundle]];
@@ -260,6 +268,13 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
     }
 }
 
+- (void)uilessUpdateDriverDidNearlyUpdate:(NSNotification *)notification
+{
+    self.isNearlyUpdated = YES;
+    SUAppcastItem *item = notification.userInfo[SUUpdaterAppcastItemNotificationKey];
+    self.nearlyUpdatedVersionString = item.displayVersionString;
+}
+
 - (NSDate *)lastUpdateCheckDate
 {
     return [self.host objectForUserDefaultsKey:SULastCheckTimeKey];
@@ -359,6 +374,8 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
     }
 
     self.driver = d;
+    self.nearlyUpdatedVersionString = nil;
+    self.isNearlyUpdated = NO;
 
     // If we're not given a driver at all, just schedule the next update check and bail.
     if (!self.driver)
@@ -398,6 +415,16 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
     {
         SULog(SULogLevelError, @"Error: [SUUpdater unregisterAsObserver] called, but the updater wasn't registered as an observer.");
     }
+}
+
+- (void)registerAsDriverObserver
+{
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(uilessUpdateDriverDidNearlyUpdate:) name:SUUpdaterDidReachNearlyUpdatedStateNotification object:nil];
+}
+
+- (void)unregisterAsDriverObserver
+{
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:SUUpdaterDidReachNearlyUpdatedStateNotification object:nil];
 }
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
@@ -628,6 +655,7 @@ static NSString *escapeURLComponent(NSString *str) {
 - (void)dealloc
 {
     [self unregisterAsObserver];
+    [self unregisterAsDriverObserver];
 	if (checkTimer) { [checkTimer invalidate]; }		// Timer is non-repeating, may have invalidated itself, so we had to retain it.
 }
 
