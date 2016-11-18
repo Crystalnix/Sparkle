@@ -1,5 +1,8 @@
 # ViaSat
 
+Patch v3.
+* Customization of minimum interval between update checks.
+
 Patch v2.
 * Send HardwareUUID and appplication version when getting appcast.
 
