@@ -1,3 +1,9 @@
+# ViaSat
+
+Patch v1.
+* Ability to trace application flow and customize logging. New keys are: SULogTraceLoggingKey, SULogPersonalLogFileKey, SULogClearAtLaunchKey, SULogMaxFileSizeKey, SULogTrimMaxFileSizeCoefficientKey
+* SULogTrace() function which is used to trace some important steps in the user flow.
+
 # 1.18.1
 
  * Add optional updaterDidRelaunchApplication: method on SUUpdaterDelegate (#1115) (App Tyrant)
