@@ -1,5 +1,8 @@
 # ViaSat
 
+Patch v4.
+* UI-less update driver.
+
 Patch v3.
 * Customization of minimum interval between update checks.
 
