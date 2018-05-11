@@ -18,6 +18,7 @@
 #import "SULocalizations.h"
 #import "SUAppcastItem.h"
 #import "SUApplicationInfo.h"
+#import "SULog.h"
 
 #if __MAC_OS_X_VERSION_MAX_ALLOWED < 1080
 @interface NSByteCountFormatter : NSFormatter {
@@ -131,20 +132,24 @@
     [self.host setObject:nil forUserDefaultsKey:SUSkippedVersionKey];
     switch (choice) {
         case SUInstallUpdateChoice:
+            SULog(SULogLevelDefault, @"User chose: update");
             [self downloadUpdate];
             break;
 
         case SUOpenInfoURLChoice:
+            SULog(SULogLevelDefault, @"User chose: see info");
             [[NSWorkspace sharedWorkspace] openURL:[self.updateItem infoURL]];
             [self abortUpdate];
             break;
 
         case SUSkipThisVersionChoice:
+            SULog(SULogLevelDefault, @"User chose: skip this version");
             [self.host setObject:[self.updateItem versionString] forUserDefaultsKey:SUSkippedVersionKey];
             [self abortUpdate];
             break;
 
         case SURemindMeLaterChoice:
+            SULog(SULogLevelDefault, @"User chose: remind later");
             [self abortUpdate];
             break;
     }

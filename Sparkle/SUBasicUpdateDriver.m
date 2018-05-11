@@ -64,6 +64,8 @@
         return;
     }
 
+    SULog(SULogLevelDefault, @"Requesting appcast...");
+
     SUAppcast *appcast = [[SUAppcast alloc] init];
 
     id<SUUpdaterPrivate> updater = self.updater;
@@ -133,9 +135,11 @@
     // Check minimum and maximum System Version
     if ([ui minimumSystemVersion] != nil && ![[ui minimumSystemVersion] isEqualToString:@""]) {
         minimumVersionOK = [versionComparator compareVersion:[ui minimumSystemVersion] toVersion:[SUOperatingSystem systemVersionString]] != NSOrderedDescending;
+        SULog(SULogLevelDefault, @"Comparing minimum version: %@ vs %@ = %@", ui.minimumSystemVersion, [SUOperatingSystem systemVersionString], minimumVersionOK ? @"OK" : @"Failed");
     }
     if ([ui maximumSystemVersion] != nil && ![[ui maximumSystemVersion] isEqualToString:@""]) {
         maximumVersionOK = [versionComparator compareVersion:[ui maximumSystemVersion] toVersion:[SUOperatingSystem systemVersionString]] != NSOrderedAscending;
+        SULog(SULogLevelDefault, @"Comparing maximum version: %@ vs %@ = %@", ui.maximumSystemVersion, [SUOperatingSystem systemVersionString], maximumVersionOK ? @"OK" : @"Failed");
     }
 
     return minimumVersionOK && maximumVersionOK && osOK;
@@ -143,14 +147,18 @@
 
 - (BOOL)isItemNewer:(SUAppcastItem *)ui
 {
-    return [[self versionComparator] compareVersion:[self.host version] toVersion:[ui versionString]] == NSOrderedAscending;
+    BOOL result = [[self versionComparator] compareVersion:[self.host version] toVersion:[ui versionString]] == NSOrderedAscending;
+    SULog(SULogLevelDefault, @"Comparing versions: %@ vs %@ = %@", self.host.version, ui.versionString, result ? @"newer" : @"older or the same");
+    return result;
 }
 
 - (BOOL)itemContainsSkippedVersion:(SUAppcastItem *)ui
 {
     NSString *skippedVersion = [self.host objectForUserDefaultsKey:SUSkippedVersionKey];
 	if (skippedVersion == nil) { return NO; }
-    return [[self versionComparator] compareVersion:[ui versionString] toVersion:skippedVersion] != NSOrderedDescending;
+    BOOL isSkipped = [[self versionComparator] compareVersion:[ui versionString] toVersion:skippedVersion] != NSOrderedDescending;
+    SULog(SULogLevelDefault, @"Comparing skipped version: %@ vs %@ = %@", ui.versionString, skippedVersion, isSkipped ? @"skipped" : @"not skipped");
+    return isSkipped;
 }
 
 - (BOOL)itemContainsValidUpdate:(SUAppcastItem *)ui
@@ -160,6 +168,8 @@
 
 - (void)appcastDidFinishLoading:(SUAppcast *)ac
 {
+    SULog(SULogLevelDefault, @"Appcast loaded, checking...");
+
     id<SUUpdaterPrivate> updater = self.updater;
     if ([[updater delegate] respondsToSelector:@selector(updater:didFinishLoadingAppcast:)]) {
         [[updater delegate] updater:self.updater didFinishLoadingAppcast:ac];
@@ -195,9 +205,11 @@
     }
 
     if ([self itemContainsValidUpdate:item]) {
+        SULog(SULogLevelDefault, @"There are updates, will try to apply...");
         self.updateItem = item;
         [self performSelectorOnMainThread:@selector(didFindValidUpdate) withObject:nil waitUntilDone:NO];
     } else {
+        SULog(SULogLevelDefault, @"No updates found");
         self.updateItem = nil;
         [self performSelectorOnMainThread:@selector(didNotFindUpdate) withObject:nil waitUntilDone:NO];
     }
@@ -295,6 +307,7 @@
     SPUURLRequest *urlRequest = [SPUURLRequest URLRequestWithRequest:request];
     NSString *desiredFilename = [NSString stringWithFormat:@"%@ %@", [self.host name], [self.updateItem versionString]];
     [self.download startPersistentDownloadWithRequest:urlRequest bundleIdentifier:bundleIdentifier desiredFilename:desiredFilename];
+    SULog(SULogLevelDefault, @"Downloading an update started...");
 }
 
 
@@ -319,6 +332,7 @@
     // finished. downloadData should be nil as this was a permanent download
     assert(self.updateItem);
     
+    SULog(SULogLevelDefault, @"Download completed, extracting...");
     [self extractUpdate];
 }
 
@@ -403,6 +417,7 @@
 {
     assert(self.updateItem);
     
+    SULog(SULogLevelDefault, @"Unarchiving completed, relaunching...");
     [self installWithToolAndRelaunch:YES];
 }
 
@@ -489,6 +504,7 @@
         [invocation setTarget:self];
         postponedOnce = YES;
         if ([updaterDelegate updater:self.updater shouldPostponeRelaunchForUpdate:self.updateItem untilInvoking:invocation]) {
+            SULog(SULogLevelDefault, @"Relaunch postponed");
             return;
         }
     }
@@ -548,6 +564,7 @@
             }
         }
     }
+    SULog(SULogLevelDefault, @"Extracted. Relaunching...");
 
     if (!copiedRelaunchPath) {
         [self abortUpdateWithError:[NSError errorWithDomain:SUSparkleErrorDomain code:SURelaunchError userInfo:@{

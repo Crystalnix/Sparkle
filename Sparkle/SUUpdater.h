@@ -106,6 +106,17 @@ SU_EXPORT @interface SUUpdater : NSObject
 @property BOOL automaticallyDownloadsUpdates;
 
 /*!
+ A property indicating whether or not display UIWindows and UIAlerts when updates.
+ 
+ Setting this property will persist in the host bundle's user defaults.
+ This option works for backgroud automatic updates when updater will only inform
+ delegate and obsrevers about checking and updating processes.
+ Note, that this option works only when both automaticallyChecksForUpdates and 
+ automaticallyDownloadsUpdates are enabled and -checkForUpdatesInBackground is called.
+ */
+@property BOOL automaticallyUpdatesWithoutUI;
+
+/*!
  A property indicating the current automatic update check interval.
 
  Setting this property will persist in the host bundle's user defaults.
@@ -229,6 +240,22 @@ SU_EXPORT @interface SUUpdater : NSObject
    Use SUUpdater::validateMenuItem: for that instead.
  */
 @property (readonly) BOOL updateInProgress;
+
+/*!
+ Calls -installWithToolAndRelaunch: displayingUserInterface: on currently active driver. Returns NO when there is no driver and app can't be relauned in this way.
+ */
+- (BOOL)forceInstallAndRelaunch;
+
+/*!
+ A property indicating whether or not an update was downloaded and extracted and application may be relaunched to apply update.
+ True when uiless driver sent nearly updated notification.
+ */
+@property (readonly) BOOL isNearlyUpdated;
+
+/*!
+ A property holding a version string of a downloaded update. Not empty only when isNearlyUpdated = YES.
+ */
+@property (strong, readonly) NSString *nearlyUpdatedVersionString;
 
 @end
 

@@ -27,6 +27,7 @@ SU_EXPORT extern NSString *const SUUpdaterDidFinishLoadingAppCastNotification;
 SU_EXPORT extern NSString *const SUUpdaterDidFindValidUpdateNotification;
 SU_EXPORT extern NSString *const SUUpdaterDidNotFindUpdateNotification;
 SU_EXPORT extern NSString *const SUUpdaterWillRestartNotification;
+SU_EXPORT extern NSString *const SUUpdaterDidReachNearlyUpdatedStateNotification;
 #define SUUpdaterWillRelaunchApplicationNotification SUUpdaterWillRestartNotification;
 #define SUUpdaterWillInstallUpdateNotification SUUpdaterWillRestartNotification;
 
@@ -275,6 +276,15 @@ SU_EXPORT extern NSString *const SUUpdaterAppcastNotificationKey;
  \param error The error that caused the abort
  */
 - (void)updater:(SUUpdater *)updater didAbortWithError:(NSError *)error;
+
+/*!
+ Called on successful update process right after unarchiving process.
+ Used when automaticallyUpdatesWithoutUI is YES.
+
+ \param updater The SUUpdater instance.
+ \param item The appcast item correstponding to the update.
+*/
+- (void)updater:(SUUpdater *)updater didReachNearlyUpdateStateForItem:(SUAppcastItem *)item;
 
 @end
 

@@ -15,6 +15,7 @@
 #import "SUUpdatePermissionPrompt.h"
 
 #import "SUAutomaticUpdateDriver.h"
+#import "SUAutomaticUIlessUpdateDriver.h"
 #import "SUProbingUpdateDriver.h"
 #import "SUUserInitiatedUpdateDriver.h"
 #import "SUScheduledUpdateDriver.h"
@@ -22,20 +23,25 @@
 #import "SULog.h"
 #import "SUCodeSigningVerifier.h"
 #import "SULocalizations.h"
+#import "SUDeviceUID.h"
 #include <SystemConfiguration/SystemConfiguration.h>
 #import "SUSystemProfiler.h"
 #import "SUSystemUpdateInfo.h"
+
+#import "SUAppcastItem.h"
 
 NSString *const SUUpdaterDidFinishLoadingAppCastNotification = @"SUUpdaterDidFinishLoadingAppCastNotification";
 NSString *const SUUpdaterDidFindValidUpdateNotification = @"SUUpdaterDidFindValidUpdateNotification";
 NSString *const SUUpdaterDidNotFindUpdateNotification = @"SUUpdaterDidNotFindUpdateNotification";
 NSString *const SUUpdaterWillRestartNotification = @"SUUpdaterWillRestartNotificationName";
+NSString *const SUUpdaterDidReachNearlyUpdatedStateNotification = @"SUUpdaterDidReachNearlyUpdatedStateNotification";
 NSString *const SUUpdaterAppcastItemNotificationKey = @"SUUpdaterAppcastItemNotificationKey";
 NSString *const SUUpdaterAppcastNotificationKey = @"SUUpdaterAppCastNotificationKey";
 
 @interface SUUpdater () <SUUpdaterPrivate>
 @property (strong) NSTimer *checkTimer;
 @property (strong) NSBundle *sparkleBundle;
+@property (strong) NSString *deviceUIDString;
 
 - (instancetype)initForBundle:(NSBundle *)bundle;
 - (void)startUpdateCycle;
@@ -51,6 +57,9 @@ NSString *const SUUpdaterAppcastNotificationKey = @"SUUpdaterAppCastNotification
 
 @property (copy) NSDate *updateLastCheckedDate;
 
+@property BOOL isNearlyUpdated;
+@property (strong) NSString *nearlyUpdatedVersionString;
+
 @end
 
 @implementation SUUpdater
@@ -64,6 +73,9 @@ NSString *const SUUpdaterAppcastNotificationKey = @"SUUpdaterAppCastNotification
 @synthesize sparkleBundle;
 @synthesize decryptionPassword;
 @synthesize updateLastCheckedDate;
+@synthesize deviceUIDString;
+@synthesize isNearlyUpdated;
+@synthesize nearlyUpdatedVersionString;
 
 static NSMutableDictionary *sharedUpdaters = nil;
 static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaultsObservationContext";
@@ -99,6 +111,8 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
     self = [super init];
     if (bundle == nil) bundle = [NSBundle mainBundle];
 
+    self.deviceUIDString = [SUDeviceUID uniqueIdentifierString];
+
     // Use explicit class to use the correct bundle even when subclassed
     self.sparkleBundle = [NSBundle bundleForClass:[SUUpdater class]];
     if (!self.sparkleBundle) {
@@ -109,6 +123,7 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
     // Register as observer straight away to avoid exceptions on -dealloc when -unregisterAsObserver is called:
     if (self) {
         [self registerAsObserver];
+        [self registerAsDriverObserver];
     }
 
     id updater = [sharedUpdaters objectForKey:[NSValue valueWithNonretainedObject:bundle]];
@@ -220,6 +235,8 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
         [self.host setBool:NO forUserDefaultsKey:SUUpdateRelaunchingMarkerKey];
     }
 
+    SULog(SULogLevelDefault, @"Sparkle module started. App version %@. Works with %@", [self.host version], [self feedURL]);
+
     if (shouldPrompt) {
         NSArray<NSDictionary<NSString *, NSString *> *> *profileInfo = [SUSystemProfiler systemProfileArrayForHost:self.host];
         // Always say we're sending the system profile here so that the delegate displays the parameters it would send.
@@ -252,6 +269,13 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
         [self updateLastUpdateCheckDate];
         [self scheduleNextUpdateCheck];
     }
+}
+
+- (void)uilessUpdateDriverDidNearlyUpdate:(NSNotification *)notification
+{
+    self.isNearlyUpdated = YES;
+    SUAppcastItem *item = notification.userInfo[SUUpdaterAppcastItemNotificationKey];
+    self.nearlyUpdatedVersionString = item.displayVersionString;
 }
 
 - (NSDate *)lastUpdateCheckDate
@@ -288,8 +312,10 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
 
     // Now we want to figure out how long until we check again.
     NSTimeInterval delayUntilCheck, updateCheckInterval = [self updateCheckInterval];
-    if (updateCheckInterval < SUMinimumUpdateCheckInterval)
-        updateCheckInterval = SUMinimumUpdateCheckInterval;
+    id checkIntervalValue = [self.host objectForKey:SUMinimumUpdateIntervalKey];
+    NSTimeInterval checkInterval = checkIntervalValue ? [checkIntervalValue doubleValue] : SUMinimumUpdateCheckInterval;
+    if (updateCheckInterval < checkInterval)
+        updateCheckInterval = checkInterval;
     if (intervalSinceCheck < updateCheckInterval)
         delayUntilCheck = (updateCheckInterval - intervalSinceCheck); // It hasn't been long enough.
     else
@@ -300,7 +326,8 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
 - (void)checkForUpdatesInBackground
 {
     // Do not use reachability for a preflight check. This can be deceptive and a bad idea. Apple does not recommend doing it.
-    SUUpdateDriver *theUpdateDriver = [[([self automaticallyDownloadsUpdates] ? [SUAutomaticUpdateDriver class] : [SUScheduledUpdateDriver class])alloc] initWithUpdater:self];
+    Class class = [self automaticallyDownloadsUpdates] ? ([self automaticallyUpdatesWithoutUI] ? [SUAutomaticUIlessUpdateDriver class] : [SUAutomaticUpdateDriver class]) : [SUScheduledUpdateDriver class];
+    SUUpdateDriver *theUpdateDriver = [[class alloc] initWithUpdater:self];
     
     [self checkForUpdatesWithDriver:theUpdateDriver];
 }
@@ -338,22 +365,31 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
 
 - (void)checkForUpdatesWithDriver:(SUUpdateDriver *)d
 {
-	if ([self updateInProgress]) { return; }
-	if (self.checkTimer) { [self.checkTimer invalidate]; self.checkTimer = nil; }		// Timer is non-repeating, may have invalidated itself, so we had to retain it.
+    SULog(SULogLevelDefault, @"Requested for update via %@", NSStringFromClass([d class]));
+    
+    if ([self updateInProgress]) {
+        SULog(SULogLevelDefault, @"Update check rejected: in progress");
+        return;
+    }
+    if (self.checkTimer) { [self.checkTimer invalidate]; self.checkTimer = nil; }		// Timer is non-repeating, may have invalidated itself, so we had to retain it.
 
     [self updateLastUpdateCheckDate];
 
     if( [self.delegate respondsToSelector: @selector(updaterMayCheckForUpdates:)] && ![self.delegate updaterMayCheckForUpdates: self] )
 	{
+        SULog(SULogLevelDefault, @"Update check rejected: not allowed by delegate");
         [self scheduleNextUpdateCheck];
         return;
     }
 
     self.driver = d;
+    self.nearlyUpdatedVersionString = nil;
+    self.isNearlyUpdated = NO;
 
     // If we're not given a driver at all, just schedule the next update check and bail.
     if (!self.driver)
     {
+        SULog(SULogLevelDefault, @"Update check rejected: no driver is set");
         [self scheduleNextUpdateCheck];
         return;
     }
@@ -361,10 +397,12 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
     [self checkIfConfiguredProperly];
 
     NSURL *theFeedURL = [self parameterizedFeedURL];
-    if (theFeedURL) // Use a NIL URL to cancel quietly.
+    if (theFeedURL) { // Use a NIL URL to cancel quietly.
         [self.driver checkForUpdatesAtURL:theFeedURL host:self.host];
-    else
+    } else {
+        SULog(SULogLevelDefault, @"Update check aborted: empty url");
         [self.driver abortUpdate];
+    }
 }
 
 - (void)registerAsObserver
@@ -388,6 +426,16 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
     }
 }
 
+- (void)registerAsDriverObserver
+{
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(uilessUpdateDriverDidNearlyUpdate:) name:SUUpdaterDidReachNearlyUpdatedStateNotification object:nil];
+}
+
+- (void)unregisterAsDriverObserver
+{
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:SUUpdaterDidReachNearlyUpdatedStateNotification object:nil];
+}
+
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
 {
 	if (context == (__bridge void *)(SUUpdaterDefaultsObservationContext))
@@ -407,6 +455,15 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
 {
     [[self class] cancelPreviousPerformRequestsWithTarget:self selector:@selector(resetUpdateCycle) object:nil];
     [self scheduleNextUpdateCheck];
+}
+
+- (BOOL)forceInstallAndRelaunch
+{
+    if (self.driver) {
+        [self.driver installWithToolAndRelaunch:YES displayingUserInterface:!self.automaticallyUpdatesWithoutUI];
+        return YES;
+    }
+    return NO;
 }
 
 - (void)setAutomaticallyChecksForUpdates:(BOOL)automaticallyCheckForUpdates
@@ -445,6 +502,16 @@ static NSString *const SUUpdaterDefaultsObservationContext = @"SUUpdaterDefaults
 
     // Otherwise, automatically downloading updates is allowed. Does the user want it?
     return [self.host boolForUserDefaultsKey:SUAutomaticallyUpdateKey];
+}
+
+- (void)setAutomaticallyUpdatesWithoutUI:(BOOL)automaticallyUpdatesWithoutUI
+{
+    [self.host setBool:automaticallyUpdatesWithoutUI forUserDefaultsKey:SUAutomaticallyUpdatesWithoutUIKey];
+}
+
+- (BOOL)automaticallyUpdatesWithoutUI
+{
+    return [self.host boolForUserDefaultsKey:SUAutomaticallyUpdatesWithoutUIKey];
 }
 
 - (void)setFeedURL:(NSURL *)feedURL
@@ -507,6 +574,25 @@ static NSString *escapeURLComponent(NSString *str) {
              stringByReplacingOccurrencesOfString:@"+" withString:@"%2b"];
 }
 
+- (NSArray *)viasatRelatedParameters
+{
+    NSMutableArray *parameters = [NSMutableArray new];
+    
+    if ([self.host displayVersion].length > 0) {
+        NSMutableDictionary *item = [NSMutableDictionary new];
+        item[@"key"] = @"appVersionShort";
+        item[@"value"] = [self.host displayVersion];
+        [parameters addObject:item];
+    }
+    if (self.deviceUIDString.length > 0) {
+        NSMutableDictionary *item = [NSMutableDictionary new];
+        item[@"key"] = @"deviceID";
+        item[@"value"] = self.deviceUIDString;
+        [parameters addObject:item];
+    }
+    return parameters;
+}
+
 - (NSURL *)parameterizedFeedURL
 {
     NSURL *baseFeedURL = [self feedURL];
@@ -531,6 +617,10 @@ static NSString *escapeURLComponent(NSString *str) {
         parameters = [parameters arrayByAddingObjectsFromArray:[SUSystemProfiler systemProfileArrayForHost:self.host]];
         [self.host setObject:[NSDate date] forUserDefaultsKey:SULastProfileSubmitDateKey];
     }
+    
+    // ViaSat requires app version and device uid to be sent every time.
+    parameters = [parameters arrayByAddingObjectsFromArray:[self viasatRelatedParameters]];
+
 	if ([parameters count] == 0) { return baseFeedURL; }
 
     // Build up the parameterized URL.
@@ -574,6 +664,7 @@ static NSString *escapeURLComponent(NSString *str) {
 - (void)dealloc
 {
     [self unregisterAsObserver];
+    [self unregisterAsDriverObserver];
 	if (checkTimer) { [checkTimer invalidate]; }		// Timer is non-repeating, may have invalidated itself, so we had to retain it.
 }
 

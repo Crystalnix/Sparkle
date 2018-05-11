@@ -1,3 +1,18 @@
+# ViaSat
+
+Patch v4.
+* UI-less update driver.
+
+Patch v3.
+* Customization of minimum interval between update checks.
+
+Patch v2.
+* Send HardwareUUID and appplication version when getting appcast.
+
+Patch v1.
+* Ability to trace application flow and customize logging. New keys are: SULogTraceLoggingKey, SULogPersonalLogFileKey, SULogClearAtLaunchKey, SULogMaxFileSizeKey, SULogTrimMaxFileSizeCoefficientKey
+* SULogTrace() function which is used to trace some important steps in the user flow.
+
 # 1.19.0
 
  * Refactoring of downloader code to avoid deprecated methods (Deadpikle)
