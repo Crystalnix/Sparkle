@@ -1,4 +1,7 @@
-# ViaSat
+# Viasat
+
+Patch v5.
+* Revert logging changes back to the first version.
 
 Patch v4.
 * UI-less update driver.
@@ -10,8 +13,7 @@ Patch v2.
 * Send HardwareUUID and appplication version when getting appcast.
 
 Patch v1.
-* Ability to trace application flow and customize logging. New keys are: SULogTraceLoggingKey, SULogPersonalLogFileKey, SULogClearAtLaunchKey, SULogMaxFileSizeKey, SULogTrimMaxFileSizeCoefficientKey
-* SULogTrace() function which is used to trace some important steps in the user flow.
+* Added more logs to trace some important steps in the user flow.
 
 # 1.19.0
 
